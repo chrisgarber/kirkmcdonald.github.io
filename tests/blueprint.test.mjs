@@ -233,10 +233,7 @@ test("imports a blueprint from document controls and updates the solution", () =
     spec.updateSolution = function() {
         this.updated++
     }
-    let status = {className: "", textContent: "", replaceChildren(...children) {
-        this.children = children
-        this.textContent = children.map(child => child.textContent).join("")
-    }}
+    let status = {className: "", textContent: ""}
     let doc = fakeDocument({
         blueprint_string: {value: encoded},
         blueprint_include_entities: {checked: true},
