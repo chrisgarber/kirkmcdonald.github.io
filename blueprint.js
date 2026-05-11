@@ -41,6 +41,29 @@ function addCount(counts, name) {
     counts.set(name, count + 1)
 }
 
+function addAmount(counts, name, amount) {
+    if (!name || !Number.isFinite(amount) || amount <= 0) {
+        return
+    }
+    let count = counts.get(name)
+    if (count === undefined) {
+        count = 0
+    }
+    counts.set(name, count + amount)
+}
+
+function addRequestedItems(counts, entity, allowedItems) {
+    if (!entity.items) {
+        return
+    }
+    for (let [name, amount] of Object.entries(entity.items)) {
+        if (allowedItems && !allowedItems.has(name)) {
+            continue
+        }
+        addAmount(counts, name, amount)
+    }
+}
+
 function itemSortKey(item) {
     return [
         item.group || "",
@@ -90,9 +113,15 @@ export function getBlueprintRoot(decoded) {
 
 export function countBlueprintItems(root, options) {
     let counts = new Map()
+    let entities = root.entities || []
     if (options.entities) {
-        for (let entity of root.entities || []) {
+        for (let entity of entities) {
             addCount(counts, entity.name)
+        }
+    }
+    if (options.modules) {
+        for (let entity of entities) {
+            addRequestedItems(counts, entity, options.moduleItems)
         }
     }
     if (options.tiles) {
@@ -161,14 +190,21 @@ export function importBlueprintFromDocument(spec, doc = document, inflate = defa
         let blueprintInput = getRequiredElement(doc, "blueprint_string")
         let includeEntities = getRequiredElement(doc, "blueprint_include_entities").checked
         let includeTiles = getRequiredElement(doc, "blueprint_include_tiles").checked
-        if (!includeEntities && !includeTiles) {
+        let includeModules = getRequiredElement(doc, "blueprint_include_modules").checked
+        if (!includeEntities && !includeTiles && !includeModules) {
             throw new Error("Select at least one blueprint section to import.")
         }
         let decoded = decodeBlueprintString(blueprintInput.value, inflate)
         let root = getBlueprintRoot(decoded)
+        let moduleItems = null
+        if (spec.modules) {
+            moduleItems = new Set(spec.modules.keys())
+        }
         let counts = countBlueprintItems(root, {
             entities: includeEntities,
             tiles: includeTiles,
+            modules: includeModules,
+            moduleItems,
         })
         if (counts.size === 0) {
             throw new Error("No blueprint items found for the selected sections.")

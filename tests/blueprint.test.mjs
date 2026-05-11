@@ -135,6 +135,50 @@ test("counts entities and tiles according to import options", () => {
     )
 })
 
+test("counts module item requests when the module option is enabled", () => {
+    let root = {
+        entities: [
+            {
+                name: "assembling-machine-3",
+                items: {
+                    "productivity-module-3": 4,
+                    "speed-module-3": 2,
+                    "iron-plate": 50,
+                },
+            },
+            {
+                name: "beacon",
+                items: {
+                    "speed-module-3": 2,
+                },
+            },
+        ],
+    }
+    let moduleItems = new Set(["productivity-module-3", "speed-module-3"])
+
+    assert.deepEqual(
+        Array.from(countBlueprintItems(root, {
+            entities: false,
+            tiles: false,
+            modules: true,
+            moduleItems,
+        })),
+        [
+            ["productivity-module-3", 4],
+            ["speed-module-3", 4],
+        ],
+    )
+    assert.deepEqual(
+        Array.from(countBlueprintItems(root, {
+            entities: false,
+            tiles: false,
+            modules: false,
+            moduleItems,
+        })),
+        [],
+    )
+})
+
 test("applies known blueprint counts as item-rate targets", () => {
     let spec = fakeSpec([
         fakeItem("transport-belt", "Transport belt", "b"),
@@ -197,6 +241,7 @@ test("imports a blueprint from document controls and updates the solution", () =
         blueprint_string: {value: encoded},
         blueprint_include_entities: {checked: true},
         blueprint_include_tiles: {checked: false},
+        blueprint_include_modules: {checked: false},
         blueprint_status: status,
     })
 
@@ -208,4 +253,49 @@ test("imports a blueprint from document controls and updates the solution", () =
         ["transport-belt", 1],
     ])
     assert.match(status.textContent, /imported 1 blueprint target/i)
+})
+
+test("imports module requests from document controls", () => {
+    let encoded = encodeBlueprint({
+        blueprint: {
+            item: "blueprint",
+            entities: [
+                {
+                    name: "assembling-machine-3",
+                    items: {
+                        "productivity-module-3": 4,
+                        "iron-plate": 50,
+                    },
+                },
+            ],
+        },
+    })
+    let spec = fakeSpec([
+        fakeItem("assembling-machine-3", "Assembling machine 3", "a"),
+        fakeItem("productivity-module-3", "Productivity module 3", "b"),
+        fakeItem("iron-plate", "Iron plate", "c"),
+    ])
+    spec.modules = new Map([
+        ["productivity-module-3", {}],
+    ])
+    spec.updated = 0
+    spec.updateSolution = function() {
+        this.updated++
+    }
+    let status = {className: "", textContent: ""}
+    let doc = fakeDocument({
+        blueprint_string: {value: encoded},
+        blueprint_include_entities: {checked: false},
+        blueprint_include_tiles: {checked: false},
+        blueprint_include_modules: {checked: true},
+        blueprint_status: status,
+    })
+
+    let result = importBlueprintFromDocument(spec, doc, inflate)
+
+    assert.equal(spec.updated, 1)
+    assert.deepEqual(spec.added, ["productivity-module-3"])
+    assert.deepEqual(result.imported.map(entry => [entry.item.key, entry.count]), [
+        ["productivity-module-3", 4],
+    ])
 })
