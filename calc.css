@@ -41,17 +41,6 @@ input:focus, select:focus {
     border-color: var(--accent);
     outline: none;
 }
-textarea {
-    color: var(--foreground);
-    background-color: var(--light);
-    padding: 0.5em;
-    border: 1px solid var(--light);
-    border-radius: 0.4em;
-}
-textarea:focus {
-    border-color: var(--accent);
-    outline: none;
-}
 .right-align {
     text-align: right;
 }
@@ -152,7 +141,16 @@ label.selected {
 #blueprint_string {
     box-sizing: border-box;
     width: min(80em, 100%);
+    color: var(--foreground);
+    background-color: var(--light);
+    padding: 0.5em;
+    border: 1px solid var(--light);
+    border-radius: 0.4em;
     font-family: monospace;
+}
+#blueprint_string:focus {
+    border-color: var(--accent);
+    outline: none;
 }
 .blueprint-options {
     margin: 0.75em 0;
